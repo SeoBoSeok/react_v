@@ -5,6 +5,7 @@ import UserList from './UserList';
 import CreateUser from './CreateUser';
 import useInputs from './useInputs';
 import './App.css';
+import ContextSample from './ContextSample';
 
 const countActiveUsers = (users) => {
   console.log('활성 사용자 수를 세는중...');
@@ -12,10 +13,6 @@ const countActiveUsers = (users) => {
 }
 
 const initialState = {
-  inputs: {
-    username: '',
-    email: ''
-  },
   users: [
     {
       id: 1,
@@ -34,14 +31,6 @@ const initialState = {
 
 const reducer = (state, action) => {
   switch(action.type) {
-    case 'CHANGE_INPUT':
-      return {
-        ...state,
-        inputs: {
-          ...state.inputs,
-          [action.name]: action.value
-        }
-      }
     case 'CREATE_USER':
       return {
         inputs: initialState.inputs,
@@ -66,17 +55,12 @@ function App() {
   const [state, dispatch] = useReducer(reducer, initialState);
   const nextId = useRef(4);
   const { users } = state;
-  const { username, email, active } = state.inputs;
-  // onChange 함수는 useCallback(f, [])을 통해서 처음 렌더링시에만 함수를 만들고 그 이후는 재사용
-  const onChange = useCallback(e => {
-    const {name, value} = e.target;
-    dispatch({
-      type: 'CHANGE_INPUT',
-      name,
-      value
-    });
-  }, []);
-
+  const [form, onChange, reset] = useInputs({
+    username: '',
+    email: '',
+    active: false
+  });
+  const {username, email, active} = form;
   const onCreate = useCallback(() => {
     dispatch({
       type: 'CREATE_USER',
@@ -88,7 +72,8 @@ function App() {
       }
     });
     nextId.current++;
-  }, [username, email, active]);
+    reset();
+  }, [username, email, active, reset]);
 
   const onToggle = useCallback(id => {
     dispatch({
@@ -108,11 +93,12 @@ function App() {
 
   return (
     <div className="App">
-      <>
+      {/* <>
         <CreateUser username={username} email={email} active={active} onChange={onChange} onCreate={onCreate} />
         <UserList users={users} onToggle={onToggle} onRemove={onRemove} />
         <div>활성 사용자 수 : {count}</div>
-      </>
+      </> */}
+      <ContextSample />
     </div>
   );
 }
