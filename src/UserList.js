@@ -1,7 +1,9 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useContext } from 'react';
+import {UserDispatch} from './App';
 
-const User = React.memo(({user, onRemove, onToggle}) => {
+const User = React.memo(({user}) => {
     const {username, email, id, active} = user;
+    const dispatch = useContext(UserDispatch);
     // useEffect(() => {
     //     // UI가 화면에 렌더링 된 후 콜백 호출된다
     //     console.log('Component가 화면에 나타납니다');
@@ -17,14 +19,14 @@ const User = React.memo(({user, onRemove, onToggle}) => {
     //     }
     // }, []); // deps
 
-    useEffect(() => {
-        console.log(user);
-        console.log('user 값이 설정됨');
-        return () => {
-            console.log('user 값이 바뀌기 전');
-            console.log(user);
-        }
-    }, [user]);
+    // useEffect(() => {
+    //     console.log(user);
+    //     console.log('user 값이 설정됨');
+    //     return () => {
+    //         console.log('user 값이 바뀌기 전');
+    //         console.log(user);
+    //     }
+    // }, [user]);
 
 
     return (
@@ -34,19 +36,25 @@ const User = React.memo(({user, onRemove, onToggle}) => {
                     color: active ? 'green' : 'black',
                     cursor: 'pointer'
                 }}
-                onClick={() => onToggle(id)}
+                onClick={() => dispatch({
+                    type: 'TOGGLE_USER',
+                    id
+                })}
             >{username}</b> <span>{email}</span>
-            <button onClick={() => onRemove(id)}>삭제</button>
+            <button onClick={() => dispatch({
+                    type: 'REMOVE_USER',
+                    id
+                })}>삭제</button>
         </div>
     )
 });
 
-const UserList = ({users, onRemove, onToggle}) => {
+const UserList = ({users}) => {
     return (
         <div>
             {
                 users.map((user) => (
-                    <User user={user} key={user.id} onRemove={onRemove} onToggle={onToggle} />
+                    <User user={user} key={user.id} />
                 ))
             }
         </div>
