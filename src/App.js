@@ -1,8 +1,9 @@
-import React, { useRef, useState, useMemo, useCallback } from 'react';
+import React, { useRef, useState, useMemo, useCallback, useReducer } from 'react';
 // import Counter from './Counter';
 // import InputSample from './InputSample';
 import UserList from './UserList';
 import CreateUser from './CreateUser';
+import useInputs from './useInputs';
 import './App.css';
 
 const countActiveUsers = (users) => {
@@ -31,77 +32,85 @@ const initialState = {
   ]
 }
 
-function App() {
-  const [inputs, setInputs] = useState({
-    username: '',
-    email: '',
-    active: false
-  });
-  const {username, email, active} = inputs;
+const reducer = (state, action) => {
+  switch(action.type) {
+    case 'CHANGE_INPUT':
+      return {
+        ...state,
+        inputs: {
+          ...state.inputs,
+          [action.name]: action.value
+        }
+      }
+    case 'CREATE_USER':
+      return {
+        inputs: initialState.inputs,
+        users: state.users.concat(action.user)
+      }
+    case 'TOGGLE_USER':
+      return {
+        ...state,
+        users: state.users.map(user => user.id === action.id ? {...user, active: !user.active} : user)
+      }
+    case 'REMOVE_USER':
+      return {
+        ...state,
+        users: state.users.filter(user => user.id !== action.id)
+      }
+    default:
+      throw new Error('Unhandled Action');
+  }
+}
 
+function App() {
+  const [state, dispatch] = useReducer(reducer, initialState);
+  const nextId = useRef(4);
+  const { users } = state;
+  const { username, email, active } = state.inputs;
+  // onChange 함수는 useCallback(f, [])을 통해서 처음 렌더링시에만 함수를 만들고 그 이후는 재사용
   const onChange = useCallback(e => {
     const {name, value} = e.target;
-    setInputs({
-      ...inputs,
-      [name]: value
+    dispatch({
+      type: 'CHANGE_INPUT',
+      name,
+      value
     });
-  }, [inputs]);
-
-  const [users, setUsers] = useState([
-    {
-        id: 1,
-        username: 'ggybbo',
-        email: 'ggybbo@example.com',
-        active: true
-
-    },
-    {
-        id: 2,
-        username: 'ggybbo2',
-        email: 'ggybbo2@example.com',
-        active: false
-    }
-  ]);
-  const nextId = useRef(users.length + 1);
+  }, []);
 
   const onCreate = useCallback(() => {
-    const user = {
-      id: nextId.current,
-      username,
-      email,
-      active
-    }
-    // setUsers([...users, user]); // 배열에 항목을 추가하는 1번째 방법
-    setUsers(users => users.concat(user)); // 배열에 항목을 추가하는 2번째 방법
-    setInputs({
-      username: '',
-      email: '',
-      active: false
+    dispatch({
+      type: 'CREATE_USER',
+      user: {
+        id: nextId.current,
+        username,
+        email,
+        active
+      }
     });
-    nextId.current += 1; // nextId.current (4)
+    nextId.current++;
   }, [username, email, active]);
-  // Component가 처음 만들어질때만 만들고 그 이후 모두 재사용 시킨다
-  // useState를 함수형 update로 바꾸고 deps를 제거하였다
-  const onRemove = useCallback(id => {
-    setUsers(
-      users =>
-      users.filter(user => user.id !== id)
-    )
-  }, []);
 
   const onToggle = useCallback(id => {
-    setUsers(
-      users =>
-      users.map(user => user.id === id ? {...user, active: !user.active} : user)
-    )
+    dispatch({
+      type: 'TOGGLE_USER',
+      id
+    })
   }, []);
-  // countActiveUsers 함수는 users가 바뀔 때만 실행된다
+
+  const onRemove = useCallback(id=> {
+    dispatch({
+      type: 'REMOVE_USER',
+      id
+    })
+  }, []);
+
   const count = useMemo(() => countActiveUsers(users), [users]);
+
   return (
     <div className="App">
       <>
-        <UserList users={users} onRemove={onRemove} onToggle={onToggle} />
-        <CreateUser username={username} email={email} onChange={onChange} onCreate={onCreate} />
+        <CreateUser username={username} email={email} active={active} onChange={onChange} onCreate={onCreate} />
+        <UserList users={users} onToggle={onToggle} onRemove={onRemove} />
         <div>활성 사용자 수 : {count}</div>
       </>
     </div>
